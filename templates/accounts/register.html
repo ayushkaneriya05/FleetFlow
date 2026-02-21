@@ -1,0 +1,150 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Account — FleetFlow</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'Inter', system-ui, sans-serif; }
+
+        .login-bg {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 30%, #1e3a5f 60%, #0f172a 100%);
+            position: relative; overflow: hidden;
+        }
+        .login-bg::before {
+            content: ''; position: absolute; inset: 0;
+            background: radial-gradient(ellipse at 30% 20%, rgba(59,130,246,0.15) 0%, transparent 50%),
+                        radial-gradient(ellipse at 70% 80%, rgba(139,92,246,0.1) 0%, transparent 50%);
+        }
+        .orb { position: absolute; border-radius: 50%; filter: blur(60px); animation: float 8s ease-in-out infinite; }
+        .orb-1 { width: 300px; height: 300px; background: rgba(59,130,246,0.12); top: 10%; left: 10%; }
+        .orb-2 { width: 200px; height: 200px; background: rgba(139,92,246,0.1); bottom: 20%; right: 15%; animation-delay: -3s; }
+        @keyframes float { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(20px, -20px) scale(1.05); } }
+
+        .glass-card {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.2);
+            box-shadow: 0 25px 50px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.1) inset;
+        }
+        .logo-glow { animation: logoPulse 3s ease-in-out infinite; }
+        @keyframes logoPulse { 0%, 100% { box-shadow: 0 0 20px rgba(59,130,246,0.3); } 50% { box-shadow: 0 0 40px rgba(59,130,246,0.5); } }
+
+        .form-input {
+            width: 100%; padding: 0.5rem 0.75rem;
+            border: 1px solid #d1d5db; border-radius: 0.5rem;
+            font-size: 0.8125rem; color: #1e293b; transition: all 0.2s; background: white;
+        }
+        .form-input:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.15); }
+        .form-input::placeholder { color: #94a3b8; }
+
+        .register-btn {
+            width: 100%; padding: 0.7rem;
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 50%, #1e40af 100%);
+            color: white; font-weight: 600; font-size: 0.875rem;
+            border: none; border-radius: 0.625rem; cursor: pointer; transition: all 0.2s;
+        }
+        .register-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 25px rgba(37,99,235,0.35); }
+        .register-btn:active { transform: translateY(0) scale(0.98); }
+
+        .grid-pattern {
+            position: absolute; inset: 0; opacity: 0.03;
+            background-image: linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+    </style>
+</head>
+<body class="h-full login-bg flex items-center justify-center py-8">
+    <div class="grid-pattern"></div>
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+
+    <div class="w-full max-w-[440px] px-4 relative z-10">
+        <div class="glass-card rounded-2xl p-7">
+            <!-- Logo -->
+            <div class="text-center mb-5">
+                <div class="inline-flex items-center justify-center w-12 h-12 rounded-xl mb-3 logo-glow" style="background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);">
+                    <svg class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                </div>
+                <h1 class="text-xl font-extrabold text-slate-900 tracking-tight">Create Account</h1>
+                <p class="text-sm text-slate-400 mt-0.5">Join FleetFlow to manage your fleet</p>
+            </div>
+
+            <!-- Form -->
+            <form method="post" class="space-y-3.5">
+                {% csrf_token %}
+
+                {% if form.non_field_errors %}
+                <div class="flex items-center gap-2 px-3 py-2.5 rounded-lg text-xs bg-red-50 border border-red-200 text-red-700">
+                    <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/></svg>
+                    {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+                </div>
+                {% endif %}
+
+                <!-- Name Row -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label for="id_first_name" class="block text-[10px] font-semibold text-slate-500 mb-1 uppercase tracking-wider">First Name</label>
+                        {{ form.first_name }}
+                        {% if form.first_name.errors %}<p class="text-red-500 text-[10px] mt-0.5">{{ form.first_name.errors.0 }}</p>{% endif %}
+                    </div>
+                    <div>
+                        <label for="id_last_name" class="block text-[10px] font-semibold text-slate-500 mb-1 uppercase tracking-wider">Last Name</label>
+                        {{ form.last_name }}
+                        {% if form.last_name.errors %}<p class="text-red-500 text-[10px] mt-0.5">{{ form.last_name.errors.0 }}</p>{% endif %}
+                    </div>
+                </div>
+
+                <div>
+                    <label for="id_username" class="block text-[10px] font-semibold text-slate-500 mb-1 uppercase tracking-wider">Username</label>
+                    {{ form.username }}
+                    {% if form.username.errors %}<p class="text-red-500 text-[10px] mt-0.5">{{ form.username.errors.0 }}</p>{% endif %}
+                </div>
+
+                <div>
+                    <label for="id_email" class="block text-[10px] font-semibold text-slate-500 mb-1 uppercase tracking-wider">Email Address</label>
+                    {{ form.email }}
+                    {% if form.email.errors %}<p class="text-red-500 text-[10px] mt-0.5">{{ form.email.errors.0 }}</p>{% endif %}
+                </div>
+
+                <div>
+                    <label for="id_role" class="block text-[10px] font-semibold text-slate-500 mb-1 uppercase tracking-wider">Role</label>
+                    {{ form.role }}
+                    {% if form.role.errors %}<p class="text-red-500 text-[10px] mt-0.5">{{ form.role.errors.0 }}</p>{% endif %}
+                </div>
+
+                <!-- Password Row -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label for="id_password1" class="block text-[10px] font-semibold text-slate-500 mb-1 uppercase tracking-wider">Password</label>
+                        {{ form.password1 }}
+                        {% if form.password1.errors %}<p class="text-red-500 text-[10px] mt-0.5">{{ form.password1.errors.0 }}</p>{% endif %}
+                    </div>
+                    <div>
+                        <label for="id_password2" class="block text-[10px] font-semibold text-slate-500 mb-1 uppercase tracking-wider">Confirm</label>
+                        {{ form.password2 }}
+                        {% if form.password2.errors %}<p class="text-red-500 text-[10px] mt-0.5">{{ form.password2.errors.0 }}</p>{% endif %}
+                    </div>
+                </div>
+
+                <button type="submit" class="register-btn mt-1">
+                    Create Account
+                    <svg class="w-4 h-4 inline-block ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/></svg>
+                </button>
+            </form>
+
+            <!-- Footer -->
+            <div class="mt-5 pt-4 border-t border-slate-100 text-center">
+                <p class="text-xs text-slate-500">
+                    Already have an account?
+                    <a href="{% url 'accounts:login' %}" class="text-blue-600 font-semibold hover:text-blue-800">Sign In</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

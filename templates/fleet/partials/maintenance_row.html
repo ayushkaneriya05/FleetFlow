@@ -1,0 +1,8 @@
+<tr>
+    <td class="font-medium text-slate-800">{{ record.vehicle.name }}</td>
+    <td><span class="pill pill-gray" style="font-size:10px">{{ record.get_service_type_display }}</span></td>
+    <td class="text-mono font-medium">₹{{ record.cost|floatformat:0 }}</td>
+    <td class="text-slate-500 text-xs">{{ record.date }}</td>
+    <td>{% if record.is_resolved %}<span class="pill pill-green">Resolved</span>{% else %}<span class="pill pill-amber">Open</span>{% endif %}</td>
+    <td class="text-right">{% if not record.is_resolved %}<form method="post" action="{% url 'fleet:maintenance_resolve' record.pk %}" class="inline" hx-post="{% url 'fleet:maintenance_resolve' record.pk %}" hx-target="closest tr" hx-swap="outerHTML">{% csrf_token %}<button type="submit" class="action-link action-activate"><svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>Resolve</button></form>{% else %}<span class="text-slate-300 text-xs">—</span>{% endif %}</td>
+</tr>

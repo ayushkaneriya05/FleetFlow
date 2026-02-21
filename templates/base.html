@@ -1,0 +1,341 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}FleetFlow{% endblock %}</title>
+    <meta name="description" content="FleetFlow — Modular Fleet & Logistics Management System">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+            colors: {
+              fleet: {
+                50: '#eef6ff', 100: '#d9eaff', 200: '#bcdaff', 300: '#8ec2ff',
+                400: '#59a0ff', 500: '#3380ff', 600: '#1b5cf5', 700: '#1447e1',
+                800: '#173ab6', 900: '#19348f', 950: '#142157',
+              },
+              sidebar: { DEFAULT: '#0f172a', hover: '#1e293b', active: '#1d4ed8' },
+            },
+          }
+        }
+      }
+    </script>
+    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'Inter', system-ui, sans-serif; }
+
+        /* ── HTMX Loading Indicator ── */
+        .htmx-indicator { display: none; }
+        .htmx-request .htmx-indicator { display: block; }
+        #page-loader {
+            position: fixed; top: 0; left: 0; right: 0; height: 3px; z-index: 9999;
+            background: linear-gradient(90deg, #3b82f6, #8b5cf6, #3b82f6);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            opacity: 0; transition: opacity 0.2s;
+        }
+        .htmx-request #page-loader { opacity: 1; }
+        @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+        /* ── Sidebar ── */
+        .sidebar-gradient {
+            background: linear-gradient(180deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+        }
+        .sidebar-link {
+            display: flex; align-items: center; gap: 0.75rem;
+            padding: 0.6rem 0.875rem; border-radius: 0.5rem;
+            font-size: 0.8125rem; font-weight: 500; color: #94a3b8;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative; overflow: hidden;
+        }
+        .sidebar-link:hover { background: rgba(255,255,255,0.06); color: #e2e8f0; }
+        .sidebar-link.active {
+            background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
+            color: white; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+        .sidebar-link.active::before {
+            content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+            background: white; border-radius: 0 2px 2px 0;
+        }
+
+        /* ── Status Pills ── */
+        .pill {
+            display: inline-flex; align-items: center; gap: 0.25rem;
+            padding: 0.25rem 0.625rem; border-radius: 9999px;
+            font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.025em;
+            line-height: 1;
+        }
+        .pill-green { background: #dcfce7; color: #166534; }
+        .pill-blue { background: #dbeafe; color: #1e40af; }
+        .pill-amber { background: #fef3c7; color: #92400e; }
+        .pill-red { background: #fee2e2; color: #991b1b; }
+        .pill-gray { background: #f1f5f9; color: #475569; }
+        .pill-violet { background: #ede9fe; color: #5b21b6; }
+        .pill::before {
+            content: ''; width: 6px; height: 6px; border-radius: 50%;
+            background: currentColor; opacity: 0.6;
+        }
+
+        /* ── KPI Cards ── */
+        .kpi-card {
+            background: white; border-radius: 0.75rem; padding: 1.25rem;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02);
+            transition: all 0.2s; position: relative; overflow: hidden;
+        }
+        .kpi-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); transform: translateY(-1px); }
+        .kpi-card::before {
+            content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+            border-radius: 4px 0 0 4px;
+        }
+        .kpi-blue::before { background: linear-gradient(180deg, #3b82f6, #1d4ed8); }
+        .kpi-amber::before { background: linear-gradient(180deg, #f59e0b, #d97706); }
+        .kpi-green::before { background: linear-gradient(180deg, #10b981, #059669); }
+        .kpi-violet::before { background: linear-gradient(180deg, #8b5cf6, #7c3aed); }
+        .kpi-red::before { background: linear-gradient(180deg, #ef4444, #dc2626); }
+
+        /* ── Tables ── */
+        .erp-table { width: 100%; font-size: 0.8125rem; text-align: left; border-collapse: separate; border-spacing: 0; }
+        .erp-table thead th {
+            padding: 0.625rem 0.875rem; font-weight: 600; font-size: 0.6875rem;
+            text-transform: uppercase; letter-spacing: 0.05em;
+            color: #64748b; background: #f8fafc;
+            border-bottom: 2px solid #e2e8f0;
+            position: sticky; top: 0; z-index: 1;
+        }
+        .erp-table tbody td {
+            padding: 0.625rem 0.875rem; border-bottom: 1px solid #f1f5f9;
+            color: #334155; vertical-align: middle;
+        }
+        .erp-table tbody tr { transition: all 0.15s; }
+        .erp-table tbody tr:hover { background: #f0f7ff; }
+        .erp-table tbody tr:nth-child(even) { background: #fafbfc; }
+        .erp-table tbody tr:nth-child(even):hover { background: #f0f7ff; }
+
+        /* ── Buttons ── */
+        .btn {
+            display: inline-flex; align-items: center; gap: 0.375rem;
+            padding: 0.5rem 1rem; border-radius: 0.5rem;
+            font-size: 0.8125rem; font-weight: 600;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            border: none; cursor: pointer; text-decoration: none;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+        .btn:active { transform: scale(0.97); }
+        .btn-primary {
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            color: white;
+        }
+        .btn-primary:hover { box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3); transform: translateY(-1px); }
+        .btn-secondary { background: white; color: #374151; border: 1px solid #d1d5db; }
+        .btn-secondary:hover { background: #f9fafb; border-color: #9ca3af; }
+        .btn-danger { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; }
+        .btn-danger:hover { box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3); }
+        .btn-success { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; }
+        .btn-success:hover { box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3); }
+        .btn-sm { padding: 0.3rem 0.625rem; font-size: 0.75rem; border-radius: 0.375rem; }
+        .btn-xs {
+            padding: 0.2rem 0.5rem; font-size: 0.6875rem; border-radius: 0.375rem;
+            font-weight: 600; box-shadow: none;
+        }
+
+        /* ── Action Links ── */
+        .action-link {
+            display: inline-flex; align-items: center; gap: 0.25rem;
+            padding: 0.2rem 0.5rem; border-radius: 0.375rem;
+            font-size: 0.6875rem; font-weight: 600;
+            transition: all 0.15s; cursor: pointer; border: none; background: none;
+        }
+        .action-edit { color: #2563eb; }
+        .action-edit:hover { background: #eff6ff; color: #1d4ed8; }
+        .action-retire { color: #dc2626; }
+        .action-retire:hover { background: #fef2f2; color: #b91c1c; }
+        .action-dispatch { color: #059669; }
+        .action-dispatch:hover { background: #ecfdf5; color: #047857; }
+        .action-cancel { color: #dc2626; }
+        .action-cancel:hover { background: #fef2f2; }
+        .action-complete { color: #2563eb; }
+        .action-complete:hover { background: #eff6ff; }
+        .action-activate { color: #059669; }
+        .action-activate:hover { background: #ecfdf5; }
+
+        /* ── Card container ── */
+        .card {
+            background: white; border-radius: 0.75rem;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+            overflow: hidden;
+        }
+        .card-header {
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid #f1f5f9;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .card-header h2 {
+            font-size: 0.875rem; font-weight: 700; color: #1e293b;
+            display: flex; align-items: center; gap: 0.5rem;
+        }
+
+        /* ── Toast Messages ── */
+        .toast-container { position: fixed; top: 1rem; right: 1rem; z-index: 9999; display: flex; flex-direction: column; gap: 0.5rem; }
+        .toast {
+            padding: 0.75rem 1rem; border-radius: 0.5rem; font-size: 0.8125rem;
+            font-weight: 500; display: flex; align-items: center; gap: 0.5rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.12);
+            animation: slideIn 0.3s ease-out, fadeOut 0.3s ease-in 4s forwards;
+            max-width: 380px;
+        }
+        .toast-success { background: #065f46; color: white; }
+        .toast-error { background: #991b1b; color: white; }
+        .toast-warning { background: #92400e; color: white; }
+        .toast-info { background: #1e40af; color: white; }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; pointer-events: none; } }
+
+        /* ── Form Inputs ── */
+        .form-input {
+            width: 100%; padding: 0.5rem 0.75rem;
+            border: 1px solid #d1d5db; border-radius: 0.5rem;
+            font-size: 0.8125rem; color: #1e293b;
+            transition: all 0.2s;
+            background: white;
+        }
+        .form-input:focus {
+            outline: none; border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+        }
+        .form-input::placeholder { color: #94a3b8; }
+
+        /* ── Progress bars ── */
+        .progress-bar {
+            height: 6px; background: #e2e8f0; border-radius: 999px; overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%; border-radius: 999px; transition: width 0.6s ease;
+        }
+
+        /* ── Misc ── */
+        .text-mono { font-variant-numeric: tabular-nums; }
+        .divider { height: 1px; background: #f1f5f9; margin: 0.5rem 0; }
+        .page-bg { background: #f8fafc; min-height: 100vh; }
+        .scroll-shadow { box-shadow: inset 0 -1px 0 #e2e8f0; }
+    </style>
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="h-full page-bg" hx-indicator="#page-loader">
+    <div id="page-loader" class="htmx-indicator"></div>
+    <div class="flex h-full">
+        <!-- ── Sidebar ── -->
+        <aside class="w-60 sidebar-gradient text-slate-400 flex flex-col flex-shrink-0 fixed h-full z-30">
+            <!-- Logo -->
+            <div class="px-5 py-4 border-b border-white/5">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 rounded-xl flex items-center justify-center" style="background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);">
+                        <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                    </div>
+                    <div>
+                        <span class="text-white font-bold text-base tracking-tight">FleetFlow</span>
+                        <span class="text-[10px] text-slate-500 block -mt-0.5 font-medium">ERP System v1.0</span>
+                    </div>
+                </div>
+            </div>
+            <!-- Navigation -->
+            <nav class="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
+                <p class="text-[10px] font-bold uppercase tracking-widest text-slate-600 px-3 mb-2">Operations</p>
+                <a href="{% url 'core:dashboard' %}" class="sidebar-link {% if request.resolver_match.url_name == 'dashboard' or request.resolver_match.url_name == 'home' %}active{% endif %}">
+                    <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z"/></svg>
+                    Command Center
+                </a>
+                <a href="{% url 'fleet:vehicle_list' %}" class="sidebar-link {% if 'vehicle' in request.resolver_match.url_name %}active{% endif %}">
+                    <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12"/></svg>
+                    Vehicle Registry
+                </a>
+                <a href="{% url 'operations:trip_list' %}" class="sidebar-link {% if 'trip' in request.resolver_match.url_name %}active{% endif %}">
+                    <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z"/></svg>
+                    Trip Dispatch
+                </a>
+                <a href="{% url 'fleet:maintenance_list' %}" class="sidebar-link {% if 'maintenance' in request.resolver_match.url_name %}active{% endif %}">
+                    <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M11.42 15.17l-5.384 3.04A.75.75 0 015 17.58V5.106a.75.75 0 01.34-.629l5.384-3.041a.75.75 0 01.756 0l5.384 3.041a.75.75 0 01.34.63v3.893M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9.75.75h.008v.008H11.25v-.008z"/><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75a4.5 4.5 0 01-4.884 4.484c-1.076-.091-2.264.071-2.95.904l-7.152 8.684a2.548 2.548 0 11-3.586-3.586l8.684-7.152c.833-.686.995-1.874.904-2.95a4.5 4.5 0 016.336-4.486l-3.276 3.276a3.004 3.004 0 002.25 2.25l3.276-3.276c.256.565.398 1.192.398 1.852z"/></svg>
+                    Maintenance
+                </a>
+
+                <div class="divider !my-3 !bg-white/5"></div>
+                <p class="text-[10px] font-bold uppercase tracking-widest text-slate-600 px-3 mb-2">Finance</p>
+
+                <a href="{% url 'finance:expense_list' %}" class="sidebar-link {% if 'expense' in request.resolver_match.url_name %}active{% endif %}">
+                    <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z"/></svg>
+                    Expenses & Fuel
+                </a>
+
+                <div class="divider !my-3 !bg-white/5"></div>
+                <p class="text-[10px] font-bold uppercase tracking-widest text-slate-600 px-3 mb-2">People</p>
+
+                <a href="{% url 'drivers:driver_list' %}" class="sidebar-link {% if 'driver' in request.resolver_match.url_name %}active{% endif %}">
+                    <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/></svg>
+                    Driver Safety
+                </a>
+
+                <div class="divider !my-3 !bg-white/5"></div>
+                <p class="text-[10px] font-bold uppercase tracking-widest text-slate-600 px-3 mb-2">Insights</p>
+
+                <a href="{% url 'analytics:dashboard' %}" class="sidebar-link {% if request.resolver_match.app_name == 'analytics' %}active{% endif %}">
+                    <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/></svg>
+                    Analytics
+                </a>
+            </nav>
+            <!-- User Profile -->
+            <div class="px-4 py-3 border-t border-white/5">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold" style="background: linear-gradient(135deg, #3b82f6, #8b5cf6);">
+                        {{ request.user.username|first|upper }}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-xs font-semibold text-slate-200 truncate">{{ request.user.get_full_name|default:request.user.username }}</p>
+                        <p class="text-[10px] text-slate-500 truncate">{{ request.user.get_role_display }}</p>
+                    </div>
+                    <a href="{% url 'accounts:logout' %}" class="text-slate-600 hover:text-red-400 transition-colors p-1 rounded hover:bg-white/5" title="Sign out">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9"/></svg>
+                    </a>
+                </div>
+            </div>
+        </aside>
+
+        <!-- ── Main Content ── -->
+        <main class="flex-1 ml-60 overflow-auto">
+            <header class="bg-white/80 backdrop-blur-md border-b border-slate-200/80 px-6 py-3.5 sticky top-0 z-20">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-lg font-bold text-slate-900 tracking-tight">{% block page_title %}Dashboard{% endblock %}</h1>
+                        {% block page_subtitle %}<p class="text-xs text-slate-400 mt-0.5">{% block page_description %}{% endblock %}</p>{% endblock %}
+                    </div>
+                    <div class="flex items-center gap-2.5">{% block page_actions %}{% endblock %}</div>
+                </div>
+            </header>
+
+            <!-- Toast Messages -->
+            {% if messages %}
+            <div class="toast-container">
+                {% for message in messages %}
+                <div class="toast toast-{% if message.tags == 'success' %}success{% elif message.tags == 'error' %}error{% elif message.tags == 'warning' %}warning{% else %}info{% endif %}">
+                    {% if message.tags == 'success' %}<svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    {% elif message.tags == 'error' %}<svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/></svg>
+                    {% else %}<svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"/></svg>{% endif %}
+                    <span>{{ message }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <div class="p-6">{% block content %}{% endblock %}</div>
+        </main>
+    </div>
+    <div id="modal-container"></div>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

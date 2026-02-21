@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+*.sqlite3
+db.sqlite3
+*.egg-info/
+dist/
+build/
+.env
+*.log
+staticfiles/
+node_modules/
+.vscode/
+.idea/
+*.swp
+*.swo

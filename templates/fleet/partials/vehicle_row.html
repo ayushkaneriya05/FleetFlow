@@ -1,0 +1,27 @@
+<tr>
+    <td class="font-semibold text-slate-800">{{ vehicle.name }}</td>
+    <td><span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono bg-slate-100 text-slate-600 border border-slate-200">{{ vehicle.license_plate }}</span></td>
+    <td><span class="pill pill-gray" style="font-size:10px">{{ vehicle.get_vehicle_type_display }}</span></td>
+    <td class="text-mono">{{ vehicle.capacity|floatformat:0 }} kg</td>
+    <td class="text-mono text-slate-500">{{ vehicle.odometer|floatformat:0 }} km</td>
+    <td class="text-slate-500">{{ vehicle.region|default:"—" }}</td>
+    <td><span class="pill pill-{{ vehicle.status_color }}">{{ vehicle.get_status_display }}</span></td>
+    <td class="text-right">
+        <div class="flex gap-1 justify-end">
+            {% if request.user.is_manager %}
+            <a href="{% url 'fleet:vehicle_edit' vehicle.pk %}" class="action-link action-edit">
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"/></svg>
+                Edit
+            </a>
+            <form method="post" action="{% url 'fleet:vehicle_toggle_retire' vehicle.pk %}" class="inline" hx-post="{% url 'fleet:vehicle_toggle_retire' vehicle.pk %}" hx-target="closest tr" hx-swap="outerHTML">{% csrf_token %}
+                {% if vehicle.status == 'retired' %}<button type="submit" class="action-link action-activate">
+                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182"/></svg>
+                    Reactivate</button>
+                {% elif vehicle.status == 'available' %}<button type="submit" class="action-link action-retire">
+                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5m6 4.125l2.25 2.25m0 0l2.25 2.25M12 13.875l2.25-2.25M12 13.875l-2.25 2.25M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z"/></svg>
+                    Retire</button>{% endif %}
+            </form>
+            {% endif %}
+        </div>
+    </td>
+</tr>

@@ -1,0 +1,33 @@
+<tr>
+    <td>
+        <div class="flex items-center gap-2.5">
+            <div class="w-7 h-7 rounded-lg flex items-center justify-center text-white text-[10px] font-bold" style="background: linear-gradient(135deg, #6366f1, #8b5cf6);">{{ driver.name|first|upper }}</div>
+            <a href="{% url 'drivers:driver_detail' driver.pk %}" class="font-semibold text-slate-800 hover:text-blue-600">{{ driver.name }}</a>
+        </div>
+    </td>
+    <td><span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono bg-slate-100 text-slate-600 border border-slate-200">{{ driver.license_number }}</span></td>
+    <td>{% if not driver.is_license_valid %}<span class="pill pill-red" style="font-size:10px">EXPIRED {{ driver.license_expiry }}</span>{% elif driver.is_license_expiring_soon %}<span class="pill pill-amber" style="font-size:10px">{{ driver.license_expiry }} ⚠</span>{% else %}<span class="text-slate-500 text-xs">{{ driver.license_expiry }}</span>{% endif %}</td>
+    <td><span class="pill pill-gray" style="font-size:10px">{{ driver.get_vehicle_category_display }}</span></td>
+    <td>
+        <div class="flex items-center gap-2">
+            <div class="w-14 progress-bar">
+                <div class="progress-fill {% if driver.safety_score >= 80 %}bg-emerald-500{% elif driver.safety_score >= 60 %}bg-amber-500{% else %}bg-red-500{% endif %}" style="width: {{ driver.safety_score }}%"></div>
+            </div>
+            <span class="text-xs font-bold text-mono {% if driver.safety_score >= 80 %}text-emerald-600{% elif driver.safety_score >= 60 %}text-amber-600{% else %}text-red-600{% endif %}">{{ driver.safety_score }}</span>
+        </div>
+    </td>
+    <td class="text-mono text-xs">{{ driver.trip_completion_rate }}%</td>
+    <td><span class="pill pill-{{ driver.status_color }}">{{ driver.get_status_display }}</span></td>
+    <td class="text-right">
+        <div class="flex gap-1 justify-end">
+            {% if request.user.is_manager or request.user.is_safety_officer %}
+            <a href="{% url 'drivers:driver_edit' driver.pk %}" class="action-link action-edit">
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"/></svg>
+                Edit</a>
+            {% if driver.status == 'available' %}<a href="{% url 'drivers:driver_toggle_status' driver.pk 'off_duty' %}" class="action-link" style="color:#64748b"><svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 5.25v13.5m-7.5-13.5v13.5"/></svg>Off Duty</a><a href="{% url 'drivers:driver_toggle_status' driver.pk 'suspended' %}" class="action-link action-retire"><svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>Suspend</a>
+            {% elif driver.status == 'off_duty' %}<a href="{% url 'drivers:driver_toggle_status' driver.pk 'available' %}" class="action-link action-activate"><svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>Activate</a>
+            {% elif driver.status == 'suspended' %}<a href="{% url 'drivers:driver_toggle_status' driver.pk 'available' %}" class="action-link action-activate"><svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182"/></svg>Reinstate</a>{% endif %}
+            {% endif %}
+        </div>
+    </td>
+</tr>

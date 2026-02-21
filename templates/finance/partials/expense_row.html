@@ -1,0 +1,8 @@
+<tr>
+    <td class="font-medium text-slate-800">{{ expense.vehicle.name }}</td>
+    <td><span class="pill pill-gray" style="font-size:10px">{{ expense.get_category_display }}</span></td>
+    <td class="text-mono text-slate-600">{{ expense.liters|floatformat:0 }} L</td>
+    <td class="text-mono font-medium text-slate-800">₹{{ expense.cost|floatformat:2 }}</td>
+    <td class="text-slate-500 text-xs">{{ expense.date }}</td>
+    <td class="text-slate-400 text-xs">{{ expense.notes|default:"—" }}</td>
+</tr>

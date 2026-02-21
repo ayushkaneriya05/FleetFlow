@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}{{ driver.name }} — FleetFlow{% endblock %}
+{% block page_title %}Driver Profile{% endblock %}
+{% block page_description %}{{ driver.name }} — {{ driver.get_vehicle_category_display }} Driver{% endblock %}
+{% block content %}
+<div class="max-w-4xl space-y-5">
+    <!-- Profile Card -->
+    <div class="card">
+        <div class="p-6">
+            <div class="flex items-start gap-4">
+                <div class="w-14 h-14 rounded-xl flex items-center justify-center text-white text-xl font-bold" style="background: linear-gradient(135deg, #6366f1, #8b5cf6);">{{ driver.name|first|upper }}</div>
+                <div class="flex-1">
+                    <h2 class="text-lg font-bold text-slate-900">{{ driver.name }}</h2>
+                    <p class="text-xs text-slate-500">{{ driver.get_vehicle_category_display }} Driver • {{ driver.license_number }}</p>
+                    <span class="pill pill-{{ driver.status_color }} mt-2">{{ driver.get_status_display }}</span>
+                </div>
+                {% if request.user.is_manager or request.user.is_safety_officer %}
+                <a href="{% url 'drivers:driver_edit' driver.pk %}" class="btn btn-secondary btn-sm">
+                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125"/></svg>
+                    Edit
+                </a>
+                {% endif %}
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+                <div class="text-center p-3 rounded-lg bg-slate-50 border border-slate-100">
+                    <p class="text-2xl font-extrabold {% if driver.safety_score >= 80 %}text-emerald-600{% elif driver.safety_score >= 60 %}text-amber-600{% else %}text-red-600{% endif %}">{{ driver.safety_score }}</p>
+                    <p class="text-[10px] text-slate-500 mt-1 font-semibold uppercase tracking-wide">Safety Score</p>
+                    <div class="mt-1.5 progress-bar"><div class="progress-fill {% if driver.safety_score >= 80 %}bg-emerald-500{% elif driver.safety_score >= 60 %}bg-amber-500{% else %}bg-red-500{% endif %}" style="width:{{ driver.safety_score }}%"></div></div>
+                </div>
+                <div class="text-center p-3 rounded-lg bg-slate-50 border border-slate-100">
+                    <p class="text-2xl font-extrabold text-slate-800">{{ completion_rate }}%</p>
+                    <p class="text-[10px] text-slate-500 mt-1 font-semibold uppercase tracking-wide">Completion Rate</p>
+                </div>
+                <div class="text-center p-3 rounded-lg bg-slate-50 border border-slate-100">
+                    <p class="text-sm font-bold text-slate-800 font-mono">{{ driver.license_number }}</p>
+                    <p class="text-[10px] text-slate-500 mt-1 font-semibold uppercase tracking-wide">License #</p>
+                </div>
+                <div class="text-center p-3 rounded-lg bg-slate-50 border border-slate-100">
+                    {% if not driver.is_license_valid %}<p class="text-lg font-extrabold text-red-600">Expired</p>
+                    {% elif driver.is_license_expiring_soon %}<p class="text-lg font-extrabold text-amber-600">{{ driver.license_expiry }}</p>
+                    {% else %}<p class="text-lg font-extrabold text-emerald-600">Valid</p>{% endif %}
+                    <p class="text-[10px] text-slate-500 mt-1 font-semibold uppercase tracking-wide">License Status</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Recent Trips -->
+    <div class="card">
+        <div class="card-header">
+            <h2><svg class="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z"/></svg>Recent Trips</h2>
+        </div>
+        <table class="erp-table"><thead><tr><th>ID</th><th>Vehicle</th><th>Route</th><th>Status</th><th>Date</th></tr></thead>
+            <tbody>{% for trip in trips %}<tr><td><a href="{% url 'operations:trip_detail' trip.pk %}" class="font-semibold text-blue-600 hover:text-blue-800">#{{ trip.pk }}</a></td><td>{{ trip.vehicle.name }}</td><td class="text-slate-500">{{ trip.origin }} → {{ trip.destination }}</td><td><span class="pill pill-{{ trip.status_color }}">{{ trip.get_status_display }}</span></td><td class="text-slate-400 text-xs">{{ trip.created_at|date:"M d, Y" }}</td></tr>{% empty %}<tr><td colspan="5" class="text-center text-slate-400 py-8">No trips assigned yet</td></tr>{% endfor %}</tbody>
+        </table>
+    </div>
+    <a href="{% url 'drivers:driver_list' %}" class="btn btn-secondary">← Back to Drivers</a>
+</div>
+{% endblock %}

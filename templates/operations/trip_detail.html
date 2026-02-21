@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Trip #{{ trip.pk }} — FleetFlow{% endblock %}
+{% block page_title %}Trip #{{ trip.pk }}{% endblock %}
+{% block page_description %}{{ trip.origin }} → {{ trip.destination }}{% endblock %}
+{% block content %}
+<div class="max-w-4xl space-y-5">
+    <div class="card">
+        <div class="p-6">
+            <div class="flex items-center justify-between mb-5">
+                <span class="pill pill-{{ trip.status_color }} !text-xs !px-3 !py-1">{{ trip.get_status_display }}</span>
+                <span class="text-[11px] text-slate-400">Created {{ trip.created_at|timesince }} ago</span>
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                <div class="p-3 rounded-lg bg-slate-50 border border-slate-100"><span class="text-[10px] text-slate-500 font-semibold uppercase tracking-wide block mb-0.5">Vehicle</span><span class="font-semibold text-slate-800 text-xs">{{ trip.vehicle.name }} ({{ trip.vehicle.license_plate }})</span></div>
+                <div class="p-3 rounded-lg bg-slate-50 border border-slate-100"><span class="text-[10px] text-slate-500 font-semibold uppercase tracking-wide block mb-0.5">Driver</span><span class="font-semibold text-slate-800 text-xs">{{ trip.driver.name }}</span></div>
+                <div class="p-3 rounded-lg bg-slate-50 border border-slate-100"><span class="text-[10px] text-slate-500 font-semibold uppercase tracking-wide block mb-0.5">Cargo</span><span class="font-semibold text-slate-800 text-xs font-mono">{{ trip.cargo_weight }} kg</span></div>
+                <div class="p-3 rounded-lg bg-slate-50 border border-slate-100"><span class="text-[10px] text-slate-500 font-semibold uppercase tracking-wide block mb-0.5">Revenue</span><span class="font-semibold text-emerald-600 text-xs font-mono">₹{{ trip.revenue|floatformat:0 }}</span></div>
+                <div class="p-3 rounded-lg bg-slate-50 border border-slate-100"><span class="text-[10px] text-slate-500 font-semibold uppercase tracking-wide block mb-0.5">Start Odometer</span><span class="font-semibold text-slate-800 text-xs font-mono">{{ trip.odometer_start|default:"—" }} km</span></div>
+                <div class="p-3 rounded-lg bg-slate-50 border border-slate-100"><span class="text-[10px] text-slate-500 font-semibold uppercase tracking-wide block mb-0.5">End Odometer</span><span class="font-semibold text-slate-800 text-xs font-mono">{{ trip.odometer_end|default:"—" }} km</span></div>
+            </div>
+            {% if trip.notes %}<div class="mt-4 text-xs text-slate-500 p-3 rounded-lg bg-slate-50 border border-slate-100"><span class="font-semibold text-slate-600">Notes:</span> {{ trip.notes }}</div>{% endif %}
+        </div>
+    </div>
+    {% if expenses %}
+    <div class="card">
+        <div class="card-header"><h2><svg class="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z"/></svg>Trip Expenses</h2></div>
+        <table class="erp-table"><thead><tr><th>Category</th><th>Cost</th><th>Date</th></tr></thead><tbody>{% for e in expenses %}<tr><td><span class="pill pill-gray" style="font-size:10px">{{ e.get_category_display }}</span></td><td class="text-mono font-medium">₹{{ e.cost|floatformat:2 }}</td><td class="text-slate-500 text-xs">{{ e.date }}</td></tr>{% endfor %}</tbody></table>
+    </div>
+    {% endif %}
+    <a href="{% url 'operations:trip_list' %}" class="btn btn-secondary">← Back to Trips</a>
+</div>
+{% endblock %}
