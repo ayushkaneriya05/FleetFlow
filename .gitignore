@@ -13,3 +13,5 @@ node_modules/
 .idea/
 *.swp
 *.swo
+.env
+*.env
