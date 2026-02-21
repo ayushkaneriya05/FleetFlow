@@ -1,4 +1,4 @@
-<tr>
+<tr id="trip-row-{{ trip.pk }}">
     <td class="font-semibold text-slate-800"><a href="{% url 'operations:trip_detail' trip.pk %}" class="hover:text-blue-600">#{{ trip.pk }}</a></td>
     <td>{{ trip.vehicle.name }}</td>
     <td>{{ trip.driver.name }}</td>
@@ -19,6 +19,10 @@
                 View
             </a>
             {% if trip.status == 'draft' %}
+            <button class="action-link action-edit" hx-get="{% url 'operations:trip_edit' trip.pk %}" hx-target="#modal-content">
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"/></svg>
+                Edit
+            </button>
             <form method="post" action="{% url 'operations:trip_dispatch' trip.pk %}" class="inline" hx-post="{% url 'operations:trip_dispatch' trip.pk %}" hx-target="closest tr" hx-swap="outerHTML">{% csrf_token %}<button type="submit" class="action-link action-dispatch">
                 <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"/></svg>
                 Dispatch</button></form>
@@ -26,9 +30,10 @@
                 <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
                 Cancel</button></form>
             {% elif trip.status == 'dispatched' %}
-            <a href="{% url 'operations:trip_complete' trip.pk %}" class="action-link action-complete">
+            <button class="action-link action-complete" hx-get="{% url 'operations:trip_complete' trip.pk %}" hx-target="#modal-content">
                 <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                Complete</a>
+                Complete
+            </button>
             <form method="post" action="{% url 'operations:trip_cancel' trip.pk %}" class="inline" hx-post="{% url 'operations:trip_cancel' trip.pk %}" hx-target="closest tr" hx-swap="outerHTML">{% csrf_token %}<button type="submit" class="action-link action-cancel">
                 <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
                 Cancel</button></form>

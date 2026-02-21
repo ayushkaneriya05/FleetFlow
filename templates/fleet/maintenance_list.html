@@ -2,14 +2,18 @@
 {% block title %}Maintenance — FleetFlow{% endblock %}
 {% block page_title %}Maintenance & Service{% endblock %}
 {% block page_description %}Track service records, parts replacement, and vehicle downtime{% endblock %}
-{% block page_actions %}{% if request.user.is_manager or request.user.is_safety_officer %}<a href="{% url 'fleet:maintenance_create' %}" class="btn btn-primary"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>Log Maintenance</a>{% endif %}{% endblock %}
+{% block page_actions %}{% if request.user.role == 'manager' or request.user.role == 'safety_officer' or request.user.is_superuser %}<button class="btn btn-primary" hx-get="{% url 'fleet:maintenance_create' %}" hx-target="#modal-content"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>Log Maintenance</button>{% endif %}{% endblock %}
 {% block content %}
 <div class="mb-5">
-    <form method="get" class="flex gap-2.5"><select name="resolved" class="form-input !w-auto !py-2 !text-xs" onchange="this.form.submit()"><option value="">All Records</option><option value="no" {% if selected_resolved == 'no' %}selected{% endif %}>Open</option><option value="yes" {% if selected_resolved == 'yes' %}selected{% endif %}>Resolved</option></select></form>
+    <form method="get" class="filter-bar">
+        <select name="resolved" class="form-input !w-auto !py-2 !text-xs"><option value="">All Records</option><option value="no" {% if selected_resolved == 'no' %}selected{% endif %}>Open</option><option value="yes" {% if selected_resolved == 'yes' %}selected{% endif %}>Resolved</option></select>
+        <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+        {% if selected_resolved %}<a href="{% url 'fleet:maintenance_list' %}" class="btn btn-secondary btn-sm">Clear</a>{% endif %}
+    </form>
 </div>
 <div class="card">
     <table class="erp-table"><thead><tr><th>Vehicle</th><th>Service Type</th><th>Cost</th><th>Date</th><th>Status</th><th class="text-right">Actions</th></tr></thead>
-        <tbody>{% for record in records %}{% include "fleet/partials/maintenance_row.html" %}{% empty %}<tr><td colspan="6" class="text-center text-slate-400 py-10">No maintenance records</td></tr>{% endfor %}</tbody>
+        <tbody id="maintenance-table-body">{% for record in records %}{% include "fleet/partials/maintenance_row.html" %}{% empty %}<tr><td colspan="6" class="text-center text-slate-400 py-10">No maintenance records</td></tr>{% endfor %}</tbody>
     </table>
 </div>
 {% endblock %}

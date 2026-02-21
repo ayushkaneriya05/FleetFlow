@@ -9,9 +9,8 @@ from operations.models import Trip
 
 @login_required
 def dashboard(request):
-    """Command Center — Page 2: High-level fleet oversight."""
+    """Command Center — High-level fleet oversight."""
     vehicle_type = request.GET.get('vehicle_type', '')
-    status_filter = request.GET.get('status', '')
     region = request.GET.get('region', '')
 
     vehicles = Vehicle.objects.exclude(status=Vehicle.Status.RETIRED)
@@ -22,22 +21,28 @@ def dashboard(request):
         vehicles = vehicles.filter(region__icontains=region)
 
     total_vehicles = vehicles.count()
-    active_fleet = vehicles.filter(status=Vehicle.Status.ON_TRIP).count()
-    maintenance_alerts = vehicles.filter(status=Vehicle.Status.IN_SHOP).count()
     available_count = vehicles.filter(status=Vehicle.Status.AVAILABLE).count()
-    utilization_rate = round((active_fleet / total_vehicles * 100), 1) if total_vehicles > 0 else 0
+    on_trip_count = vehicles.filter(status=Vehicle.Status.ON_TRIP).count()
+    in_maintenance_count = vehicles.filter(status=Vehicle.Status.IN_SHOP).count()
+    utilization_rate = round((on_trip_count / total_vehicles * 100), 1) if total_vehicles > 0 else 0
 
-    pending_cargo = Trip.objects.filter(status=Trip.Status.DRAFT).count()
+    # Filter pending cargo by the same vehicle set
+    vehicle_ids = vehicles.values_list('id', flat=True)
+    pending_cargo = Trip.objects.filter(status=Trip.Status.DRAFT, vehicle_id__in=vehicle_ids).count()
 
-    recent_trips = Trip.objects.select_related('vehicle', 'driver').order_by('-updated_at')[:10]
+    recent_trips = (
+        Trip.objects.select_related('vehicle', 'driver')
+        .filter(vehicle_id__in=vehicle_ids)
+        .order_by('-updated_at')[:10]
+    )
 
     regions = Vehicle.objects.exclude(region='').values_list('region', flat=True).distinct().order_by('region')
 
     context = {
         'total_vehicles': total_vehicles,
-        'active_fleet': active_fleet,
-        'maintenance_alerts': maintenance_alerts,
         'available_count': available_count,
+        'on_trip_count': on_trip_count,
+        'in_maintenance_count': in_maintenance_count,
         'utilization_rate': utilization_rate,
         'pending_cargo': pending_cargo,
         'recent_trips': recent_trips,

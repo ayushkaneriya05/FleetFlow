@@ -1,7 +1,7 @@
 from django import forms
 from .models import Vehicle, Maintenance
 
-FORM_INPUT_CLASS = 'w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-sm'
+FORM_INPUT_CLASS = 'form-input'
 FORM_SELECT_CLASS = FORM_INPUT_CLASS
 
 

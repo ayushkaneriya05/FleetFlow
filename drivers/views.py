@@ -1,3 +1,4 @@
+import json
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -5,6 +6,32 @@ from .models import Driver
 from .forms import DriverForm
 from core.decorators import role_required
 from core.audit import log_state_change, log_creation
+
+
+def _htmx_success_row(request, template, context, table_id, toast_msg, swap='afterbegin'):
+    resp = render(request, template, context)
+    resp['HX-Retarget'] = f'#{table_id}'
+    resp['HX-Reswap'] = swap
+    resp['HX-Trigger'] = json.dumps({
+        'showToast': {'message': toast_msg, 'level': 'success'},
+        'closeModal': True,
+    })
+    return resp
+
+
+def _htmx_error_form(request, template, context):
+    return render(request, template, context)
+
+
+def _htmx_inline_toasts(request, template, context):
+    resp = render(request, template, context)
+    toast_msgs = []
+    storage = messages.get_messages(request)
+    for m in storage:
+        toast_msgs.append({'message': str(m), 'level': m.tags.split()[-1] if m.tags else 'info'})
+    if toast_msgs:
+        resp['HX-Trigger'] = json.dumps({'showToasts': toast_msgs})
+    return resp
 
 
 @login_required
@@ -40,15 +67,22 @@ def driver_create(request):
         if form.is_valid():
             driver = form.save()
             log_creation(driver, request.user, f'Driver "{driver.name}" added')
-            messages.success(request, f'Driver "{driver.name}" added successfully.')
             if request.htmx:
-                return render(request, 'drivers/partials/driver_row.html', {'driver': driver})
+                return _htmx_success_row(
+                    request, 'drivers/partials/driver_row.html', {'driver': driver},
+                    'driver-table-body', f'Driver "{driver.name}" added.',
+                )
+            messages.success(request, f'Driver "{driver.name}" added successfully.')
             return redirect('drivers:driver_list')
+        else:
+            if request.htmx:
+                return _htmx_error_form(request, 'drivers/partials/driver_modal_form.html',
+                                        {'form': form, 'title': 'Add Driver', 'action_url': request.path})
     else:
         form = DriverForm()
 
-    template = 'drivers/partials/driver_form.html' if request.htmx else 'drivers/driver_form.html'
-    return render(request, template, {'form': form, 'title': 'Add Driver'})
+    template = 'drivers/partials/driver_modal_form.html' if request.htmx else 'drivers/driver_form.html'
+    return render(request, template, {'form': form, 'title': 'Add Driver', 'action_url': request.path})
 
 
 @login_required
@@ -59,15 +93,22 @@ def driver_edit(request, pk):
         form = DriverForm(request.POST, instance=driver)
         if form.is_valid():
             form.save()
-            messages.success(request, f'Driver "{driver.name}" updated.')
             if request.htmx:
-                return render(request, 'drivers/partials/driver_row.html', {'driver': driver})
+                return _htmx_success_row(
+                    request, 'drivers/partials/driver_row.html', {'driver': driver},
+                    'driver-table-body', f'Driver "{driver.name}" updated.',
+                )
+            messages.success(request, f'Driver "{driver.name}" updated.')
             return redirect('drivers:driver_list')
+        else:
+            if request.htmx:
+                return _htmx_error_form(request, 'drivers/partials/driver_modal_form.html',
+                                        {'form': form, 'title': 'Edit Driver', 'driver': driver, 'action_url': request.path})
     else:
         form = DriverForm(instance=driver)
 
-    template = 'drivers/partials/driver_form.html' if request.htmx else 'drivers/driver_form.html'
-    return render(request, template, {'form': form, 'title': 'Edit Driver', 'driver': driver})
+    template = 'drivers/partials/driver_modal_form.html' if request.htmx else 'drivers/driver_form.html'
+    return render(request, template, {'form': form, 'title': 'Edit Driver', 'driver': driver, 'action_url': request.path})
 
 
 @login_required
@@ -88,7 +129,7 @@ def driver_toggle_status(request, pk, new_status):
         messages.success(request, f'Driver "{driver.name}" status changed to {valid_statuses[new_status]}.')
 
     if request.htmx:
-        return render(request, 'drivers/partials/driver_row.html', {'driver': driver})
+        return _htmx_inline_toasts(request, 'drivers/partials/driver_row.html', {'driver': driver})
     return redirect('drivers:driver_list')
 
 

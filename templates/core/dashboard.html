@@ -5,19 +5,21 @@
 {% block content %}
 <!-- Filters -->
 <div class="mb-6">
-    <form method="get" class="flex flex-wrap gap-2.5 items-center">
-        <select name="vehicle_type" class="form-input !w-auto !py-2 !text-xs" onchange="this.form.submit()">
+    <form method="get" class="filter-bar">
+        <select name="vehicle_type" class="form-input !w-auto !py-2 !text-xs">
             <option value="">All Types</option>
             {% for val, label in vehicle_types %}
             <option value="{{ val }}" {% if selected_vehicle_type == val %}selected{% endif %}>{{ label }}</option>
             {% endfor %}
         </select>
-        <select name="region" class="form-input !w-auto !py-2 !text-xs" onchange="this.form.submit()">
+        <select name="region" class="form-input !w-auto !py-2 !text-xs">
             <option value="">All Regions</option>
             {% for r in regions %}
             <option value="{{ r }}" {% if selected_region == r %}selected{% endif %}>{{ r }}</option>
             {% endfor %}
         </select>
+        <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+        {% if selected_vehicle_type or selected_region %}<a href="{% url 'core:dashboard' %}" class="btn btn-secondary btn-sm">Clear</a>{% endif %}
     </form>
 </div>
 
@@ -26,25 +28,17 @@
     <div class="kpi-card kpi-blue">
         <div class="flex items-start justify-between">
             <div class="pl-3">
-                <p class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Active Fleet</p>
-                <p class="text-3xl font-extrabold text-slate-900 mt-1 text-mono">{{ active_fleet }}</p>
-                <p class="text-[11px] text-slate-400 mt-1">Vehicles on active trips</p>
+                <p class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Total Fleet</p>
+                <p class="text-3xl font-extrabold text-slate-900 mt-1 text-mono">{{ total_vehicles }}</p>
+                <p class="text-[11px] text-slate-400 mt-1">{{ utilization_rate }}% utilization</p>
             </div>
             <div class="w-10 h-10 rounded-xl flex items-center justify-center bg-blue-50">
                 <svg class="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12"/></svg>
             </div>
         </div>
-    </div>
-
-    <div class="kpi-card kpi-amber">
-        <div class="flex items-start justify-between">
-            <div class="pl-3">
-                <p class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Maintenance</p>
-                <p class="text-3xl font-extrabold text-amber-600 mt-1 text-mono">{{ maintenance_alerts }}</p>
-                <p class="text-[11px] text-slate-400 mt-1">Vehicles in shop</p>
-            </div>
-            <div class="w-10 h-10 rounded-xl flex items-center justify-center bg-amber-50">
-                <svg class="w-5 h-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/></svg>
+        <div class="mt-3 pl-3">
+            <div class="progress-bar">
+                <div class="progress-fill bg-blue-500" style="width: {{ utilization_rate }}%"></div>
             </div>
         </div>
     </div>
@@ -52,17 +46,12 @@
     <div class="kpi-card kpi-green">
         <div class="flex items-start justify-between">
             <div class="pl-3">
-                <p class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Utilization</p>
-                <p class="text-3xl font-extrabold text-emerald-600 mt-1 text-mono">{{ utilization_rate }}%</p>
-                <p class="text-[11px] text-slate-400 mt-1">{{ active_fleet }}/{{ total_vehicles }} fleet assigned</p>
+                <p class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Available</p>
+                <p class="text-3xl font-extrabold text-emerald-600 mt-1 text-mono">{{ available_count }}</p>
+                <p class="text-[11px] text-slate-400 mt-1">Ready for dispatch</p>
             </div>
             <div class="w-10 h-10 rounded-xl flex items-center justify-center bg-emerald-50">
-                <svg class="w-5 h-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/></svg>
-            </div>
-        </div>
-        <div class="mt-3 pl-3">
-            <div class="progress-bar">
-                <div class="progress-fill bg-emerald-500" style="width: {{ utilization_rate }}%"></div>
+                <svg class="w-5 h-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
             </div>
         </div>
     </div>
@@ -70,35 +59,26 @@
     <div class="kpi-card kpi-violet">
         <div class="flex items-start justify-between">
             <div class="pl-3">
-                <p class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Pending Cargo</p>
-                <p class="text-3xl font-extrabold text-violet-600 mt-1 text-mono">{{ pending_cargo }}</p>
-                <p class="text-[11px] text-slate-400 mt-1">Awaiting dispatch</p>
+                <p class="text-xs font-semibold text-slate-500 uppercase tracking-wide">On Trip</p>
+                <p class="text-3xl font-extrabold text-violet-600 mt-1 text-mono">{{ on_trip_count }}</p>
+                <p class="text-[11px] text-slate-400 mt-1">{{ pending_cargo }} pending dispatch</p>
             </div>
             <div class="w-10 h-10 rounded-xl flex items-center justify-center bg-violet-50">
-                <svg class="w-5 h-5 text-violet-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z"/></svg>
+                <svg class="w-5 h-5 text-violet-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z"/></svg>
             </div>
         </div>
     </div>
-</div>
 
-<!-- Status Summary -->
-<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-    <div class="card">
-        <div class="px-4 py-3.5 flex items-center gap-3">
-            <div class="w-9 h-9 rounded-lg flex items-center justify-center text-emerald-700 font-bold text-sm bg-emerald-100">{{ available_count }}</div>
-            <div><p class="text-sm font-semibold text-slate-800">Available</p><p class="text-[11px] text-slate-400">Ready for dispatch</p></div>
-        </div>
-    </div>
-    <div class="card">
-        <div class="px-4 py-3.5 flex items-center gap-3">
-            <div class="w-9 h-9 rounded-lg flex items-center justify-center text-blue-700 font-bold text-sm bg-blue-100">{{ active_fleet }}</div>
-            <div><p class="text-sm font-semibold text-slate-800">On Trip</p><p class="text-[11px] text-slate-400">Currently active</p></div>
-        </div>
-    </div>
-    <div class="card">
-        <div class="px-4 py-3.5 flex items-center gap-3">
-            <div class="w-9 h-9 rounded-lg flex items-center justify-center text-amber-700 font-bold text-sm bg-amber-100">{{ maintenance_alerts }}</div>
-            <div><p class="text-sm font-semibold text-slate-800">In Maintenance</p><p class="text-[11px] text-slate-400">Service in progress</p></div>
+    <div class="kpi-card kpi-amber">
+        <div class="flex items-start justify-between">
+            <div class="pl-3">
+                <p class="text-xs font-semibold text-slate-500 uppercase tracking-wide">In Maintenance</p>
+                <p class="text-3xl font-extrabold text-amber-600 mt-1 text-mono">{{ in_maintenance_count }}</p>
+                <p class="text-[11px] text-slate-400 mt-1">Vehicles in shop</p>
+            </div>
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center bg-amber-50">
+                <svg class="w-5 h-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75a4.5 4.5 0 01-4.884 4.484c-1.076-.091-2.264.071-2.95.904l-7.152 8.684a2.548 2.548 0 11-3.586-3.586l8.684-7.152c.833-.686.995-1.874.904-2.95a4.5 4.5 0 016.336-4.486l-3.276 3.276a3.004 3.004 0 002.25 2.25l3.276-3.276c.256.565.398 1.192.398 1.852z"/></svg>
+            </div>
         </div>
     </div>
 </div>

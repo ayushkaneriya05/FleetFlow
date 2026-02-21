@@ -1,3 +1,4 @@
+import json
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -6,6 +7,32 @@ from .models import Vehicle, Maintenance
 from .forms import VehicleForm, MaintenanceForm
 from core.decorators import role_required
 from core.audit import log_state_change, log_creation
+
+
+def _htmx_success_row(request, template, context, table_id, toast_msg, swap='afterbegin'):
+    resp = render(request, template, context)
+    resp['HX-Retarget'] = f'#{table_id}'
+    resp['HX-Reswap'] = swap
+    resp['HX-Trigger'] = json.dumps({
+        'showToast': {'message': toast_msg, 'level': 'success'},
+        'closeModal': True,
+    })
+    return resp
+
+
+def _htmx_error_form(request, template, context):
+    return render(request, template, context)
+
+
+def _htmx_inline_toasts(request, template, context):
+    resp = render(request, template, context)
+    toast_msgs = []
+    storage = messages.get_messages(request)
+    for m in storage:
+        toast_msgs.append({'message': str(m), 'level': m.tags.split()[-1] if m.tags else 'info'})
+    if toast_msgs:
+        resp['HX-Trigger'] = json.dumps({'showToasts': toast_msgs})
+    return resp
 
 
 @login_required
@@ -42,15 +69,22 @@ def vehicle_create(request):
         if form.is_valid():
             vehicle = form.save()
             log_creation(vehicle, request.user, f'Vehicle "{vehicle.name}" added to fleet')
-            messages.success(request, f'Vehicle "{vehicle.name}" added successfully.')
             if request.htmx:
-                return render(request, 'fleet/partials/vehicle_row.html', {'vehicle': vehicle})
+                return _htmx_success_row(
+                    request, 'fleet/partials/vehicle_row.html', {'vehicle': vehicle},
+                    'vehicle-table-body', f'Vehicle "{vehicle.name}" added.',
+                )
+            messages.success(request, f'Vehicle "{vehicle.name}" added successfully.')
             return redirect('fleet:vehicle_list')
+        else:
+            if request.htmx:
+                return _htmx_error_form(request, 'fleet/partials/vehicle_modal_form.html',
+                                        {'form': form, 'title': 'Add Vehicle', 'action_url': request.path})
     else:
         form = VehicleForm()
 
-    template = 'fleet/partials/vehicle_form.html' if request.htmx else 'fleet/vehicle_form.html'
-    return render(request, template, {'form': form, 'title': 'Add Vehicle'})
+    template = 'fleet/partials/vehicle_modal_form.html' if request.htmx else 'fleet/vehicle_form.html'
+    return render(request, template, {'form': form, 'title': 'Add Vehicle', 'action_url': request.path})
 
 
 @login_required
@@ -61,15 +95,22 @@ def vehicle_edit(request, pk):
         form = VehicleForm(request.POST, instance=vehicle)
         if form.is_valid():
             form.save()
-            messages.success(request, f'Vehicle "{vehicle.name}" updated.')
             if request.htmx:
-                return render(request, 'fleet/partials/vehicle_row.html', {'vehicle': vehicle})
+                return _htmx_success_row(
+                    request, 'fleet/partials/vehicle_row.html', {'vehicle': vehicle},
+                    'vehicle-table-body', f'Vehicle "{vehicle.name}" updated.', swap='afterbegin',
+                )
+            messages.success(request, f'Vehicle "{vehicle.name}" updated.')
             return redirect('fleet:vehicle_list')
+        else:
+            if request.htmx:
+                return _htmx_error_form(request, 'fleet/partials/vehicle_modal_form.html',
+                                        {'form': form, 'title': 'Edit Vehicle', 'vehicle': vehicle, 'action_url': request.path})
     else:
         form = VehicleForm(instance=vehicle)
 
-    template = 'fleet/partials/vehicle_form.html' if request.htmx else 'fleet/vehicle_form.html'
-    return render(request, template, {'form': form, 'title': 'Edit Vehicle', 'vehicle': vehicle})
+    template = 'fleet/partials/vehicle_modal_form.html' if request.htmx else 'fleet/vehicle_form.html'
+    return render(request, template, {'form': form, 'title': 'Edit Vehicle', 'vehicle': vehicle, 'action_url': request.path})
 
 
 @login_required
@@ -94,7 +135,7 @@ def vehicle_toggle_retire(request, pk):
         messages.success(request, f'Vehicle "{vehicle.name}" retired.')
 
     if request.htmx:
-        return render(request, 'fleet/partials/vehicle_row.html', {'vehicle': vehicle})
+        return _htmx_inline_toasts(request, 'fleet/partials/vehicle_row.html', {'vehicle': vehicle})
     return redirect('fleet:vehicle_list')
 
 
@@ -132,15 +173,22 @@ def maintenance_create(request):
                     vehicle.save()
                     log_state_change(vehicle, request.user, 'status', old_status, vehicle.status, f'Moved to shop for {record.get_service_type_display()}')
                 log_creation(record, request.user, f'Maintenance record: {record.get_service_type_display()}')
-            messages.success(request, f'Maintenance logged for "{vehicle.name}".')
             if request.htmx:
-                return render(request, 'fleet/partials/maintenance_row.html', {'record': record})
+                return _htmx_success_row(
+                    request, 'fleet/partials/maintenance_row.html', {'record': record},
+                    'maintenance-table-body', f'Maintenance logged for "{vehicle.name}".',
+                )
+            messages.success(request, f'Maintenance logged for "{vehicle.name}".')
             return redirect('fleet:maintenance_list')
+        else:
+            if request.htmx:
+                return _htmx_error_form(request, 'fleet/partials/maintenance_modal_form.html',
+                                        {'form': form, 'title': 'Log Maintenance', 'action_url': request.path})
     else:
         form = MaintenanceForm()
 
-    template = 'fleet/partials/maintenance_form.html' if request.htmx else 'fleet/maintenance_form.html'
-    return render(request, template, {'form': form, 'title': 'Log Maintenance'})
+    template = 'fleet/partials/maintenance_modal_form.html' if request.htmx else 'fleet/maintenance_form.html'
+    return render(request, template, {'form': form, 'title': 'Log Maintenance', 'action_url': request.path})
 
 
 @login_required
@@ -160,5 +208,5 @@ def maintenance_resolve(request, pk):
                 log_state_change(vehicle, request.user, 'status', old, vehicle.status, 'All maintenance resolved')
         messages.success(request, f'Maintenance for "{vehicle.name}" marked as resolved.')
     if request.htmx:
-        return render(request, 'fleet/partials/maintenance_row.html', {'record': record})
+        return _htmx_inline_toasts(request, 'fleet/partials/maintenance_row.html', {'record': record})
     return redirect('fleet:maintenance_list')

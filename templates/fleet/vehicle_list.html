@@ -3,30 +3,31 @@
 {% block page_title %}Vehicle Registry{% endblock %}
 {% block page_description %}Manage your fleet assets, capacity, and lifecycle status{% endblock %}
 {% block page_actions %}
-{% if request.user.is_manager %}
-<a href="{% url 'fleet:vehicle_create' %}" class="btn btn-primary">
+{% if request.user.role == 'manager' or request.user.is_superuser %}
+<button class="btn btn-primary" hx-get="{% url 'fleet:vehicle_create' %}" hx-target="#modal-content">
     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
     Add Vehicle
-</a>
+</button>
 {% endif %}
 {% endblock %}
 {% block content %}
 <!-- Filters -->
 <div class="mb-5">
-    <form method="get" class="flex flex-wrap gap-2.5 items-center">
+    <form method="get" class="filter-bar">
         <div class="relative flex-1 max-w-xs">
             <svg class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg>
             <input type="text" name="q" value="{{ search_query }}" placeholder="Search name or plate..." class="form-input !pl-9 !py-2 !text-xs">
         </div>
-        <select name="status" class="form-input !w-auto !py-2 !text-xs" onchange="this.form.submit()">
+        <select name="status" class="form-input !w-auto !py-2 !text-xs">
             <option value="">All Status</option>
             {% for val, label in statuses %}<option value="{{ val }}" {% if selected_status == val %}selected{% endif %}>{{ label }}</option>{% endfor %}
         </select>
-        <select name="vehicle_type" class="form-input !w-auto !py-2 !text-xs" onchange="this.form.submit()">
+        <select name="vehicle_type" class="form-input !w-auto !py-2 !text-xs">
             <option value="">All Types</option>
             {% for val, label in vehicle_types %}<option value="{{ val }}" {% if selected_type == val %}selected{% endif %}>{{ label }}</option>{% endfor %}
         </select>
-        <button type="submit" class="btn btn-secondary btn-sm">Filter</button>
+        <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+        {% if search_query or selected_status or selected_type %}<a href="{% url 'fleet:vehicle_list' %}" class="btn btn-secondary btn-sm">Clear</a>{% endif %}
     </form>
 </div>
 

@@ -1,3 +1,4 @@
+import json
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -8,6 +9,21 @@ from fleet.models import Vehicle, Maintenance
 from operations.models import Trip
 from core.decorators import role_required
 from core.audit import log_creation
+
+
+def _htmx_success_row(request, template, context, table_id, toast_msg, swap='afterbegin'):
+    resp = render(request, template, context)
+    resp['HX-Retarget'] = f'#{table_id}'
+    resp['HX-Reswap'] = swap
+    resp['HX-Trigger'] = json.dumps({
+        'showToast': {'message': toast_msg, 'level': 'success'},
+        'closeModal': True,
+    })
+    return resp
+
+
+def _htmx_error_form(request, template, context):
+    return render(request, template, context)
 
 
 @login_required
@@ -43,11 +59,18 @@ def expense_create(request):
         if form.is_valid():
             expense = form.save()
             log_creation(expense, request.user, f'{expense.get_category_display()} expense: ₹{expense.cost}')
-            messages.success(request, f'Expense of ₹{expense.cost} logged successfully.')
             if request.htmx:
-                return render(request, 'finance/partials/expense_row.html', {'expense': expense})
+                return _htmx_success_row(
+                    request, 'finance/partials/expense_row.html', {'expense': expense},
+                    'expense-table-body', f'Expense of ₹{expense.cost} logged.',
+                )
+            messages.success(request, f'Expense of ₹{expense.cost} logged successfully.')
             return redirect('finance:expense_list')
+        else:
+            if request.htmx:
+                return _htmx_error_form(request, 'finance/partials/expense_modal_form.html',
+                                        {'form': form, 'title': 'Log Expense', 'action_url': request.path})
     else:
         form = ExpenseForm()
-    template = 'finance/partials/expense_form.html' if request.htmx else 'finance/expense_form.html'
-    return render(request, template, {'form': form, 'title': 'Log Expense'})
+    template = 'finance/partials/expense_modal_form.html' if request.htmx else 'finance/expense_form.html'
+    return render(request, template, {'form': form, 'title': 'Log Expense', 'action_url': request.path})

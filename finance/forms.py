@@ -3,7 +3,7 @@ from .models import Expense
 from fleet.models import Vehicle
 from operations.models import Trip
 
-FORM_INPUT_CLASS = 'w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-sm'
+FORM_INPUT_CLASS = 'form-input'
 
 
 class ExpenseForm(forms.ModelForm):
@@ -25,3 +25,17 @@ class ExpenseForm(forms.ModelForm):
         self.fields['trip'].required = False
         self.fields['trip'].queryset = Trip.objects.filter(status__in=['dispatched', 'completed'])
         self.fields['vehicle'].queryset = Vehicle.objects.exclude(status=Vehicle.Status.RETIRED)
+
+    def clean(self):
+        cleaned = super().clean()
+        vehicle = cleaned.get('vehicle')
+        trip = cleaned.get('trip')
+
+        if trip and vehicle:
+            if trip.vehicle_id != vehicle.pk:
+                self.add_error(
+                    'vehicle',
+                    f'Vehicle "{vehicle.name}" is not assigned to Trip #{trip.pk}. '
+                    f'Trip #{trip.pk} uses "{trip.vehicle.name}".'
+                )
+        return cleaned
